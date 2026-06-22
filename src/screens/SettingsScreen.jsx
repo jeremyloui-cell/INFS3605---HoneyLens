@@ -78,7 +78,7 @@ export default function SettingsScreen({ tester, onLogout }) {
           </div>
         ) : (
           <button onClick={handleSync} disabled={syncing || queue.length === 0}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40"
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-opacity"
             style={{ background: 'linear-gradient(135deg, #7C5CDB, #5B3FA8)' }}>
             {syncing ? (
               <><RefreshCw size={15} className="animate-spin" /> Syncing…</>

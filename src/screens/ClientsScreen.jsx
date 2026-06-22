@@ -306,7 +306,7 @@ function ClientDetail({ client, onBack, onRefresh, onDispense }) {
               className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                 done    ? 'bg-brand-teal/10 border border-brand-teal/30' :
                 isNext  ? 'bg-brand-accent/15 border border-brand-accent/40 active:scale-98' :
-                          'bg-white/3 border border-white/5 opacity-40'
+                          'bg-white/5 border border-white/5 opacity-40'
               }`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                 done ? 'step-done' : isNext ? 'step-active' : 'step-todo'
@@ -510,11 +510,11 @@ function StepModal({ step, client, onSave, onSkip, onClose }) {
 
           <div className="flex gap-2">
             <button onClick={() => onSkip(step)}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold bg-white/8 text-white/60">
+              className="flex-1 py-3 rounded-xl text-sm font-semibold bg-white/10 text-white/60">
               Skip Step
             </button>
             <button onClick={handleSave}
-              className="flex-2 px-8 py-3 rounded-xl text-sm font-semibold text-white"
+              className="flex-1 px-8 py-3 rounded-xl text-sm font-semibold text-white"
               style={{ background: 'linear-gradient(135deg, #7C5CDB, #5B3FA8)' }}>
               Save & Continue
             </button>
@@ -533,14 +533,3 @@ function InfoBox({ children }) {
   )
 }
 
-function field_label({ children }) { return null }
-
-// Inject the label style as a component
-export function FieldLabel({ children }) {
-  return <p className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider">{children}</p>
-}
-
-// Patch: Add field-label utility
-const style = document.createElement('style')
-style.textContent = `.field-label { font-size: 11px; font-weight: 600; color: #9B7EF0; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px; }`
-document.head.appendChild(style)
