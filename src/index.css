@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #1A0F3C;
+  color: #F0EEFF;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile phone frame on desktop */
+@media (min-width: 500px) {
+  .mobile-shell {
+    max-width: 390px;
+    margin: 0 auto;
+    min-height: 100svh;
+    position: relative;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3D2580; border-radius: 2px; }
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 92, 219, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(124, 92, 219, 0); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-slide-up { animation: slide-up 0.35s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+.animate-pulse-glow { animation: pulse-glow 2s infinite; }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+/* Eye chart font style */
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Status dot */
+.status-dot-online { background: #00C9A7; box-shadow: 0 0 0 3px rgba(0,201,167,0.25); }
+.status-dot-offline { background: #9CA3AF; }
+.status-dot-syncing { background: #F5A623; box-shadow: 0 0 0 3px rgba(245,166,35,0.25); }
+
+/* Right/Left eye badges */
+.eye-right { background: rgba(74,144,217,0.15); border: 1px solid rgba(74,144,217,0.5); color: #6BAEE8; }
+.eye-left  { background: rgba(240,238,255,0.1); border: 1px solid rgba(240,238,255,0.4); color: #E8E6FF; }
+
+/* Card glass effect */
+.glass-card {
+  background: rgba(61, 37, 128, 0.35);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 92, 219, 0.25);
+}
+
+/* Progress step */
+.step-active { background: #7C5CDB; color: white; }
+.step-done   { background: #00C9A7; color: #1A0F3C; }
+.step-todo   { background: rgba(124,92,219,0.15); color: rgba(240,238,255,0.4); border: 1px solid rgba(124,92,219,0.2); }
+
+/* Input styles */
+.field-input {
+  background: rgba(26, 15, 60, 0.6);
+  border: 1px solid rgba(124, 92, 219, 0.3);
+  border-radius: 10px;
+  color: #F0EEFF;
+  padding: 12px 14px;
+  width: 100%;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus {
+  border-color: #7C5CDB;
+  box-shadow: 0 0 0 3px rgba(124,92,219,0.15);
+}
+
+.field-input::placeholder { color: rgba(240,238,255,0.3); }
+
+select.field-input option { background: #2D1B69; }
+
+/* Bottom nav */
+.nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0 6px; gap: 3px; font-size: 10px; color: rgba(240,238,255,0.45); transition: color 0.2s; }
+.nav-tab.active { color: #9B7EF0; }
+.nav-tab-icon { width: 22px; height: 22px; }
+
+/* QR container */
+.qr-container { background: white; border-radius: 16px; padding: 16px; display: inline-block; }
+
+/* Snackbar */
+.snackbar {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3D2580;
+  border: 1px solid rgba(124,92,219,0.5);
+  color: #F0EEFF;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 100;
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Chip */
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+
+.chip-teal   { background: rgba(0,201,167,0.15); color: #00C9A7; border: 1px solid rgba(0,201,167,0.3); }
+.chip-amber  { background: rgba(245,166,35,0.15); color: #F5A623;  border: 1px solid rgba(245,166,35,0.3); }
+.chip-purple { background: rgba(124,92,219,0.2);  color: #9B7EF0;  border: 1px solid rgba(124,92,219,0.3); }
+.chip-red    { background: rgba(232,84,84,0.15);  color: #E85454;  border: 1px solid rgba(232,84,84,0.3); }
+.chip-blue   { background: rgba(74,144,217,0.15); color: #6BAEE8;  border: 1px solid rgba(74,144,217,0.3); }
