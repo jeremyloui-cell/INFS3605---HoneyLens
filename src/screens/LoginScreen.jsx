@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { saveTester } from '../store'
-import { Eye, Lock, User, ChevronRight, Wifi, WifiOff } from 'lucide-react'
+import { saveTester, demoLogin } from '../store'
+import { Lock, User, ChevronRight, WifiOff, Zap } from 'lucide-react'
 
 export default function LoginScreen({ onLogin }) {
-  const [step, setStep] = useState('login') // login | register
+  const [step, setStep] = useState('login')
   const [form, setForm] = useState({ name: '', pin: '', role: 'Tester', experience: 'Trained', ageBand: '25-34', gender: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -21,10 +22,19 @@ export default function LoginScreen({ onLogin }) {
     }, 900)
   }
 
+  function handleDemo() {
+    setDemoLoading(true)
+    setTimeout(() => {
+      demoLogin()
+      setDemoLoading(false)
+      onLogin()
+    }, 1200)
+  }
+
   return (
-    <div className="min-h-svh bg-brand-purple-dark flex flex-col" style={{ background: 'linear-gradient(170deg, #1A0F3C 0%, #0D0820 100%)' }}>
-      {/* Top decoration */}
-      <div className="absolute top-0 left-0 right-0 h-72 overflow-hidden pointer-events-none">
+    <div className="min-h-svh flex flex-col" style={{ background: 'linear-gradient(170deg, #1A0F3C 0%, #0D0820 100%)' }}>
+      {/* Background orbs */}
+      <div className="absolute top-0 left-0 right-0 h-80 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20 animate-spin-slow"
           style={{ background: 'radial-gradient(circle, #7C5CDB 0%, transparent 70%)' }} />
         <div className="absolute -top-10 right-0 w-52 h-52 rounded-full opacity-15"
@@ -42,24 +52,46 @@ export default function LoginScreen({ onLogin }) {
             <h1 className="text-3xl font-bold tracking-tight text-white">HoneyLens</h1>
             <p className="text-sm text-brand-accent-light mt-1 font-medium">OOXii Field Testing Platform</p>
           </div>
-
-          {/* Offline badge */}
           <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1">
             <WifiOff size={12} className="text-brand-amber" />
-            <span className="text-xs text-brand-amber font-medium">Offline-first mode</span>
+            <span className="text-xs text-brand-amber font-medium">Offline-first · Works without internet</span>
+          </div>
+        </div>
+
+        {/* Demo login banner */}
+        <div className="animate-slide-up" style={{ animationDelay: '0.05s' }}>
+          <button onClick={handleDemo} disabled={demoLoading}
+            className="w-full rounded-2xl p-4 flex items-center gap-3 active:scale-98 transition-transform disabled:opacity-60 mb-4"
+            style={{ background: 'linear-gradient(135deg, rgba(0,201,167,0.15), rgba(74,144,217,0.15))', border: '1px solid rgba(0,201,167,0.35)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'linear-gradient(135deg, #00C9A7, #4A90D9)' }}>
+              {demoLoading ? <Spinner /> : <Zap size={18} color="white" />}
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-white">Quick Demo Login</p>
+              <p className="text-xs text-white/50">Sign in as Sophia · pre-loaded with demo data</p>
+            </div>
+            {!demoLoading && <ChevronRight size={16} className="text-white/30 ml-auto" />}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/30">or sign in with your account</span>
+            <div className="flex-1 h-px bg-white/10" />
           </div>
         </div>
 
         {/* Form */}
         <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-5">
-              {step === 'login' ? 'Sign in to your account' : 'Register as tester'}
+          <div className="glass-card rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-white mb-4">
+              {step === 'login' ? 'Sign in' : 'Register as tester'}
             </h2>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">Full name</label>
+                <label className="field-label">Full name</label>
                 <div className="relative">
                   <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-accent opacity-60" />
                   <input className="field-input pl-9" placeholder="Your name" value={form.name} onChange={e => set('name', e.target.value)} />
@@ -67,10 +99,12 @@ export default function LoginScreen({ onLogin }) {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">4-digit PIN</label>
+                <label className="field-label">4-digit PIN</label>
                 <div className="relative">
                   <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-accent opacity-60" />
-                  <input className="field-input pl-9 font-mono tracking-[0.35em]" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={form.pin} onChange={e => set('pin', e.target.value.replace(/\D/g, ''))} />
+                  <input className="field-input pl-9 font-mono tracking-[0.35em]" type="password"
+                    inputMode="numeric" maxLength={4} placeholder="••••"
+                    value={form.pin} onChange={e => set('pin', e.target.value.replace(/\D/g, ''))} />
                 </div>
               </div>
 
@@ -78,36 +112,29 @@ export default function LoginScreen({ onLogin }) {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">Role</label>
+                      <label className="field-label">Role</label>
                       <select className="field-input" value={form.role} onChange={e => set('role', e.target.value)}>
-                        <option>Tester</option>
-                        <option>Supervisor</option>
-                        <option>Dispenser</option>
+                        <option>Tester</option><option>Supervisor</option><option>Dispenser</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">Experience</label>
+                      <label className="field-label">Experience</label>
                       <select className="field-input" value={form.experience} onChange={e => set('experience', e.target.value)}>
-                        <option>Trained</option>
-                        <option>Experienced</option>
-                        <option>Expert</option>
+                        <option>Trained</option><option>Experienced</option><option>Expert</option>
                       </select>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">Age band</label>
+                      <label className="field-label">Age band</label>
                       <select className="field-input" value={form.ageBand} onChange={e => set('ageBand', e.target.value)}>
                         {['18-24','25-34','35-44','45-54','55+'].map(a => <option key={a}>{a}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-brand-accent-light uppercase tracking-wider mb-1.5 block">Gender</label>
+                      <label className="field-label">Gender</label>
                       <select className="field-input" value={form.gender} onChange={e => set('gender', e.target.value)}>
-                        <option value="">Prefer not</option>
-                        <option>Male</option>
-                        <option>Female</option>
-                        <option>Non-binary</option>
+                        <option value="">Prefer not</option><option>Male</option><option>Female</option><option>Non-binary</option>
                       </select>
                     </div>
                   </div>
@@ -117,16 +144,13 @@ export default function LoginScreen({ onLogin }) {
               {error && <p className="text-brand-red text-sm">{error}</p>}
 
               <button type="submit" disabled={loading}
-                className="w-full py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
+                className="w-full py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg, #7C5CDB, #5B3FA8)' }}>
-                {loading ? <Spinner /> : <>
-                  {step === 'login' ? 'Sign in' : 'Create account'}
-                  <ChevronRight size={18} />
-                </>}
+                {loading ? <Spinner /> : <>{step === 'login' ? 'Sign in' : 'Create account'}<ChevronRight size={18} /></>}
               </button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-3 text-center">
               <button className="text-sm text-brand-accent-light hover:text-white transition-colors"
                 onClick={() => setStep(s => s === 'login' ? 'register' : 'login')}>
                 {step === 'login' ? "New tester? Register here" : "Already registered? Sign in"}
@@ -135,10 +159,9 @@ export default function LoginScreen({ onLogin }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-white/30 space-y-1">
-          <p>Stays logged in for 30 days · No client data stored locally</p>
-          <p>OOXii Field Platform v2.1</p>
+        <div className="text-center text-xs text-white/25 space-y-1">
+          <p>Stays logged in for 30 days · No client personal data stored</p>
+          <p className="font-semibold text-white/15">OOXii HoneyLens v2.1</p>
         </div>
       </div>
     </div>
@@ -147,7 +170,7 @@ export default function LoginScreen({ onLogin }) {
 
 function EyeLogoSvg() {
   return (
-    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
       <ellipse cx="20" cy="20" rx="18" ry="11" stroke="white" strokeWidth="2" strokeLinecap="round"/>
       <circle cx="20" cy="20" r="5" fill="white" fillOpacity="0.9"/>
       <circle cx="20" cy="20" r="2.5" fill="#7C5CDB"/>

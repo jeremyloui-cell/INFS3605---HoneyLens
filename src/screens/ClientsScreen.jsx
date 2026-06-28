@@ -18,13 +18,16 @@ const STEPS = [
 const VA_OPTIONS = ['6/6','6/9','6/12','6/18','6/24','6/36','6/60','CF','HM','PL','NPL']
 const NEAR_VA    = ['N5','N6','N8','N10','N12','N14','N18','N24','N36']
 
-export default function ClientsScreen({ tester, camp, onDispense }) {
+export default function ClientsScreen({ tester, camp, onDispense, startInNewMode, onNewModeHandled }) {
   const [clients, setClients] = useState(getClients())
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
-  const [view, setView] = useState('list') // list | detail | new
+  const [view, setView] = useState(startInNewMode ? 'new' : 'list')
   const [selectedId, setSelectedId] = useState(null)
   const [activeStep, setActiveStep] = useState(null)
+
+  // Acknowledge the new-mode trigger so it doesn't re-fire
+  useState(() => { if (startInNewMode && onNewModeHandled) onNewModeHandled() })
 
   function refresh() { setClients(getClients()) }
 
