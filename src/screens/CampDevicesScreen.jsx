@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getDevices, getThisDevice, getCamp, getClients, buildSyncPayload, encodeQRPayload, getSyncQueue } from '../store'
 import { QRCodeSVG } from 'qrcode.react'
-import { Monitor, RefreshCw, Share2, Scan, Battery, Clock, CheckCircle2, AlertCircle, Loader2, ChevronRight, MapPin, Users, Wifi, WifiOff, X } from 'lucide-react'
+import { Monitor, RefreshCw, Share2, Scan, Clock, CheckCircle2, Loader2, ChevronRight, MapPin, X, Smartphone, Zap } from 'lucide-react'
 
 const statusConfig = {
   online:  { label: 'Online',   dot: 'status-dot-online',  text: 'text-brand-teal',  chip: 'chip-teal'   },
@@ -12,10 +12,11 @@ const statusConfig = {
 export default function CampDevicesScreen({ tester, camp }) {
   const [devices, setDevices] = useState(getDevices())
   const [showQR, setShowQR] = useState(false)
-  const [qrMode, setQrMode] = useState('share') // share | scan
+  const [qrMode, setQrMode] = useState('share')
   const [qrPayload, setQrPayload] = useState('')
   const [syncCount, setSyncCount] = useState(getSyncQueue().length)
   const [lastRefresh, setLastRefresh] = useState(Date.now())
+  const [selectedDevice, setSelectedDevice] = useState(null)
   const thisDevice = getThisDevice()
   const clients = getClients()
 
@@ -152,7 +153,8 @@ export default function CampDevicesScreen({ tester, camp }) {
           {devices.map(device => {
             const cfg = statusConfig[device.status] || statusConfig.offline
             return (
-              <div key={device.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3">
+              <button key={device.id} onClick={() => setSelectedDevice(device)}
+                className="glass-card rounded-xl p-3.5 flex items-center gap-3 w-full text-left active:scale-98 transition-transform">
                 <div className="relative shrink-0">
                   <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
                     <Monitor size={16} className="text-white/60" />
@@ -171,7 +173,7 @@ export default function CampDevicesScreen({ tester, camp }) {
                     <span>{timeSince(device.lastSeen)}</span>
                   </div>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
@@ -179,13 +181,14 @@ export default function CampDevicesScreen({ tester, camp }) {
 
       {/* QR Modal */}
       {showQR && (
-        <QRModal
-          mode={qrMode}
-          payload={qrPayload}
-          thisDeviceId={thisDevice.id}
-          onClose={() => setShowQR(false)}
-          onSyncComplete={() => { setSyncCount(0); setShowQR(false) }}
-        />
+        <QRModal mode={qrMode} payload={qrPayload} thisDeviceId={thisDevice.id}
+          onClose={() => setShowQR(false)} onSyncComplete={() => { setSyncCount(0); setShowQR(false) }} />
+      )}
+
+      {/* Device detail modal */}
+      {selectedDevice && (
+        <DeviceDetailModal device={selectedDevice} onClose={() => setSelectedDevice(null)}
+          onSyncWith={() => { setSelectedDevice(null); setQrMode('share'); openShareQR() }} />
       )}
     </div>
   )
@@ -328,6 +331,99 @@ function QRModal({ mode, payload, thisDeviceId, onClose, onSyncComplete }) {
             )}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function DeviceDetailModal({ device, onClose, onSyncWith }) {
+  const cfg = statusConfig[device.status] || statusConfig.offline
+  const [pinging, setPinging] = useState(false)
+  const [pinged, setPinged] = useState(false)
+
+  function timeSince(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000)
+    if (s < 60) return `${s}s ago`
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`
+    return `${Math.floor(s / 3600)}h ago`
+  }
+
+  function handlePing() {
+    setPinging(true)
+    setTimeout(() => { setPinging(false); setPinged(true) }, 1800)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: 'rgba(10,6,25,0.88)', backdropFilter: 'blur(10px)' }} onClick={onClose}>
+      <div className="w-full max-w-[390px] rounded-t-3xl pb-10 animate-slide-up"
+        style={{ background: 'linear-gradient(180deg, #2D1B69 0%, #1A0F3C 100%)', border: '1px solid rgba(124,92,219,0.3)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-5" />
+
+        <div className="flex items-center justify-between px-6 mb-5">
+          <h3 className="text-lg font-bold text-white">Device Details</h3>
+          <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+            <X size={15} className="text-white/70" />
+          </button>
+        </div>
+
+        {/* Device hero */}
+        <div className="mx-6 mb-4 glass-card rounded-xl p-4 flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
+              <Smartphone size={26} className="text-white/50" />
+            </div>
+            <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#1A0F3C] ${cfg.dot}`} />
+          </div>
+          <div>
+            <p className="font-mono font-bold text-white">{device.id}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`chip ${cfg.chip || 'chip-purple'}`}>{cfg.label}</span>
+              <span className="chip chip-blue">{device.role}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="mx-6 glass-card rounded-xl divide-y divide-white/5 mb-4">
+          {[
+            ['Tester',    device.tester],
+            ['Role',      device.role],
+            ['Clients',   `${device.clients} recorded`],
+            ['Battery',   `${device.battery}%`],
+            ['Last seen', timeSince(device.lastSeen)],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between px-4 py-2.5">
+              <span className="text-xs text-white/40">{k}</span>
+              <span className="text-xs font-semibold text-white">{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Ping feedback */}
+        {pinged && (
+          <div className="mx-6 mb-3 flex items-center gap-2 rounded-xl px-4 py-2.5"
+            style={{ background: 'rgba(0,201,167,0.12)', border: '1px solid rgba(0,201,167,0.3)' }}>
+            <CheckCircle2 size={14} className="text-brand-teal" />
+            <p className="text-xs text-brand-teal">Ping sent — device responded in 42ms</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="px-6 grid grid-cols-2 gap-2">
+          <button onClick={handlePing} disabled={pinging || device.status === 'offline'}
+            className="py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40"
+            style={{ background: 'rgba(124,92,219,0.2)', border: '1px solid rgba(124,92,219,0.3)', color: '#9B7EF0' }}>
+            {pinging ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+            {pinging ? 'Pinging…' : 'Ping'}
+          </button>
+          <button onClick={onSyncWith} disabled={device.status === 'offline'}
+            className="py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #7C5CDB, #5B3FA8)' }}>
+            <Share2 size={14} /> Sync with
+          </button>
+        </div>
       </div>
     </div>
   )

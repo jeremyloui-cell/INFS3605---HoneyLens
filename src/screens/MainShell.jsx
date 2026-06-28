@@ -5,7 +5,9 @@ import CampDevicesScreen from './CampDevicesScreen'
 import ClientsScreen from './ClientsScreen'
 import DispenserScreen from './DispenserScreen'
 import SettingsScreen from './SettingsScreen'
-import { LayoutDashboard, Monitor, Users, Glasses, WifiOff, X, Star, MapPin, Clock, LogOut, ChevronRight, Bell, CheckCircle2, AlertCircle, Settings } from 'lucide-react'
+import ConnectivityPanel from '../components/ConnectivityPanel'
+import CampDetailsPanel from '../components/CampDetailsPanel'
+import { LayoutDashboard, Monitor, Users, Glasses, WifiOff, X, MapPin, Clock, LogOut, ChevronRight, Bell, CheckCircle2, AlertCircle, Settings } from 'lucide-react'
 
 const TABS = [
   { id: 'home',      label: 'Home',     icon: LayoutDashboard },
@@ -24,9 +26,11 @@ const INIT_NOTIFS = [
 export default function MainShell({ onLogout }) {
   const [tab, setTab]                   = useState('home')
   const [selectedClientId, setSelectedClientId] = useState(null)
-  const [showProfile, setShowProfile]   = useState(false)
-  const [showNotifs, setShowNotifs]     = useState(false)
-  const [notifs, setNotifs]             = useState(INIT_NOTIFS)
+  const [showProfile, setShowProfile]     = useState(false)
+  const [showNotifs, setShowNotifs]       = useState(false)
+  const [showWifi, setShowWifi]           = useState(false)
+  const [showCampDetails, setShowCampDetails] = useState(false)
+  const [notifs, setNotifs]               = useState(INIT_NOTIFS)
   const [newClientMode, setNewClientMode] = useState(false)
   const tester  = getTester()
   const camp    = getCamp()
@@ -59,7 +63,9 @@ export default function MainShell({ onLogout }) {
     <div className="flex flex-col min-h-svh" style={{ background: 'linear-gradient(170deg, #1A0F3C 0%, #0D0820 100%)' }}>
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-12 pb-3 border-b border-white/5 shrink-0">
-        <div className="flex items-center gap-2.5">
+        {/* Logo + camp name — tappable */}
+        <button onClick={() => setShowCampDetails(true)}
+          className="flex items-center gap-2.5 active:opacity-70 transition-opacity">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #7C5CDB, #4A90D9)' }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -67,17 +73,19 @@ export default function MainShell({ onLogout }) {
               <circle cx="8" cy="8" r="2" fill="white"/>
             </svg>
           </div>
-          <div>
-            <p className="text-[10px] text-white/40 leading-none">HoneyLens · OOXii</p>
+          <div className="text-left">
+            <p className="text-[10px] text-white/40 leading-none">HoneyLens · OOXii ›</p>
             <p className="text-sm font-semibold text-white leading-tight">{camp.name}</p>
           </div>
-        </div>
+        </button>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-white/5 rounded-full px-2.5 py-1">
+          {/* WiFi badge — tappable */}
+          <button onClick={() => setShowWifi(true)}
+            className="flex items-center gap-1.5 bg-white/5 rounded-full px-2.5 py-1 active:bg-white/10 transition-colors">
             <WifiOff size={11} className="text-brand-amber" />
             <span className="text-[10px] text-brand-amber font-medium">Offline</span>
-          </div>
+          </button>
 
           {/* Bell */}
           <button onClick={() => { setShowNotifs(true); setShowProfile(false) }}
@@ -133,6 +141,8 @@ export default function MainShell({ onLogout }) {
       {showNotifs && (
         <NotificationsModal notifs={notifs} onMarkRead={markAllRead} onClose={() => setShowNotifs(false)} />
       )}
+      {showWifi && <ConnectivityPanel onClose={() => setShowWifi(false)} />}
+      {showCampDetails && <CampDetailsPanel onClose={() => setShowCampDetails(false)} />}
     </div>
   )
 }
