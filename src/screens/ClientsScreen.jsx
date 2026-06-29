@@ -95,7 +95,8 @@ export default function ClientsScreen({ tester, camp, onDispense, startInNewMode
 function ClientCard({ client, onOpen }) {
   const cfg = STATUS_CONFIG[client.status] || STATUS_CONFIG.waiting
   const Icon = cfg.icon
-  const completedSteps = client.steps.length
+  const steps = client.steps || []
+  const completedSteps = steps.length
   const progress = Math.round((completedSteps / 4) * 100)
 
   return (
@@ -122,7 +123,7 @@ function ClientCard({ client, onOpen }) {
         <div className="flex items-center gap-1.5 mt-2">
           {STEPS.map(s => (
             <div key={s.id}
-              className={`h-1.5 rounded-full flex-1 ${client.steps.includes(s.id) ? 'bg-brand-teal' : 'bg-white/10'}`} />
+              className={`h-1.5 rounded-full flex-1 ${(client.steps || []).includes(s.id) ? 'bg-brand-teal' : 'bg-white/10'}`} />
           ))}
         </div>
       </div>
@@ -226,7 +227,7 @@ function NewClientForm({ camp, onSave, onBack }) {
 }
 
 function ClientDetail({ client, onBack, onRefresh, onDispense }) {
-  const [localClient, setLocalClient] = useState(client)
+  const [localClient, setLocalClient] = useState({ steps: [], ...client })
   const [activeStep, setActiveStep] = useState(null)
   const [stepForm, setStepForm] = useState({})
   const cfg = STATUS_CONFIG[localClient.status] || STATUS_CONFIG.waiting
