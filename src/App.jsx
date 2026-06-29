@@ -1,24 +1,29 @@
 import { useState, useEffect } from 'react'
-import { isLoggedIn, getTester } from './store'
+import { isLoggedIn, hasSetRegion } from './store'
 import LoginScreen from './screens/LoginScreen'
+import RegionConfirmScreen from './screens/RegionConfirmScreen'
 import MainShell from './screens/MainShell'
 
+function getView() {
+  if (!isLoggedIn()) return 'login'
+  if (!hasSetRegion()) return 'region'
+  return 'main'
+}
+
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(isLoggedIn())
+  const [view, setView] = useState(getView)
 
   useEffect(() => {
-    // Recheck on storage changes
-    const handler = () => setLoggedIn(isLoggedIn())
+    const handler = () => setView(getView())
     window.addEventListener('storage', handler)
     return () => window.removeEventListener('storage', handler)
   }, [])
 
   return (
     <div className="mobile-shell">
-      {loggedIn
-        ? <MainShell onLogout={() => setLoggedIn(false)} />
-        : <LoginScreen onLogin={() => setLoggedIn(true)} />
-      }
+      {view === 'login'  && <LoginScreen onLogin={() => setView(hasSetRegion() ? 'main' : 'region')} />}
+      {view === 'region' && <RegionConfirmScreen onConfirm={() => setView('main')} />}
+      {view === 'main'   && <MainShell onLogout={() => setView('login')} />}
     </div>
   )
 }

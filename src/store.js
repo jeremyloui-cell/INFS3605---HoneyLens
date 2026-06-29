@@ -1,197 +1,213 @@
-// Offline-first local data store using localStorage
+// HoneyLens — OOXii Field Platform — Offline-first data store
 
 const KEYS = {
-  TESTER: 'hl_tester',
-  CLIENTS: 'hl_clients',
-  DEVICES: 'hl_devices',
-  CAMP: 'hl_camp',
+  TESTER:     'hl_tester',
+  CLIENTS:    'hl_clients',
+  DEVICES:    'hl_devices',
+  CAMP:       'hl_camp',
   SYNC_QUEUE: 'hl_sync_queue',
+  REMEMBER:   'hl_remember',
+  REGION_SET: 'hl_region_set',
 }
 
 function load(key, fallback = null) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch { return fallback }
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback }
+  catch { return fallback }
+}
+function save(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
+
+// --- Password validation ---
+export function validatePassword(pw) {
+  const errors = []
+  if (pw.length < 8)              errors.push('At least 8 characters')
+  if (!/[A-Z]/.test(pw))         errors.push('At least 1 uppercase letter (A-Z)')
+  if (!/[!@#$%^&*()_+\-=[\]{}|;':",.<>?/`~\\]/.test(pw)) errors.push('At least 1 special character (e.g., !@#$)')
+  return errors
 }
 
-function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
-// --- Check character for short IDs ---
-function checkChar(id) {
-  const CHARS = 'ACDEFHJKLMNPRTUVWXY3479'
-  let n = 0
-  for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) % CHARS.length
-  return CHARS[n]
-}
-
-export function generateClientId() {
-  const digits = Math.floor(1000 + Math.random() * 9000).toString()
-  return digits + checkChar(digits)
-}
-
-function generateDeviceId() {
-  const adj = ['SWIFT','CLEAR','BRIGHT','SHARP','KEEN','BOLD']
-  const noun = ['EYE','LENS','BEAM','SIGHT','VIEW','IRIS']
-  return adj[Math.floor(Math.random() * adj.length)] + '-' + noun[Math.floor(Math.random() * noun.length)] + '-' + Math.floor(10 + Math.random() * 90)
-}
-
-// --- Tester ---
-export function getTester() { return load(KEYS.TESTER) }
-export function saveTester(t) { save(KEYS.TESTER, { ...t, loginAt: Date.now() }) }
+// --- Auth ---
+export function getTester()  { return load(KEYS.TESTER) }
 export function isLoggedIn() {
   const t = getTester()
   if (!t) return false
-  return (Date.now() - t.loginAt) < 30 * 24 * 60 * 60 * 1000
+  const remember = load(KEYS.REMEMBER, false)
+  const maxAge = remember ? 30 * 24 * 3600000 : 8 * 3600000
+  return (Date.now() - t.loginAt) < maxAge
 }
 export function logout() { localStorage.removeItem(KEYS.TESTER) }
+export function hasSetRegion() { return !!load(KEYS.REGION_SET) }
+export function setRegionConfirmed() { save(KEYS.REGION_SET, true) }
 
-// Quick demo login — pre-seeds a tester + data
+export function register(data) {
+  save(KEYS.TESTER, { ...data, loginAt: Date.now(), id: 'T-' + Math.floor(10000 + Math.random() * 90000) })
+}
+
+export function login(email, password, remember) {
+  // Demo: any credentials work; in production this hits the API
+  const existing = getTester()
+  if (existing && existing.email === email) {
+    save(KEYS.TESTER, { ...existing, loginAt: Date.now() })
+    save(KEYS.REMEMBER, remember)
+    return true
+  }
+  // Demo fallback — create a session
+  save(KEYS.TESTER, {
+    email, firstName: 'John', lastName: 'Smith', gender: 'Male',
+    country: 'Australia', state: 'New South Wales', city: 'Sydney',
+    role: 'Optometrist', experience: 'Experienced', organisation: 'OOXii',
+    loginAt: Date.now(), id: 'T-00001',
+  })
+  save(KEYS.REMEMBER, remember)
+  return true
+}
+
 export function demoLogin() {
-  saveTester({ name: 'Sophia Kalpokas', role: 'Tester', experience: 'Experienced', ageBand: '25-34', gender: 'Female', homeBase: 'Port Vila, Vanuatu' })
-  // Pre-seed demo clients if not already there
+  save(KEYS.TESTER, {
+    email: 'sophia@ooxii.org', firstName: 'Sophia', lastName: 'Kalpokas',
+    gender: 'Female', country: 'Vanuatu', state: 'Sanma', city: 'Luganville',
+    role: 'Tester', experience: 'Experienced', organisation: 'OOXii Vanuatu',
+    loginAt: Date.now(), id: 'T-00042',
+  })
+  save(KEYS.REMEMBER, true)
+  save(KEYS.REGION_SET, true)
   if (!load(KEYS.CLIENTS)) save(KEYS.CLIENTS, DEMO_CLIENTS)
-  if (!load(KEYS.CAMP)) save(KEYS.CAMP, DEMO_CAMP)
+  if (!load(KEYS.CAMP))    save(KEYS.CAMP, DEMO_CAMP)
   if (!load(KEYS.DEVICES)) save(KEYS.DEVICES, DEMO_DEVICES)
+}
+
+// --- Forgot password ---
+export function sendPasswordReset(email) {
+  // Demo: simulate sending
+  return new Promise(res => setTimeout(() => res(true), 1200))
 }
 
 // --- Camp ---
 const DEMO_CAMP = {
-  name: 'Luganville Eye Camp',
-  location: 'Santo, Vanuatu',
+  name: 'Luganville Eye Camp', location: 'Santo, Vanuatu',
   date: new Date().toISOString().slice(0, 10),
-  campId: 'CAMP-2847',
-  startTime: Date.now() - 4 * 3600000,
+  campId: 'CAMP-2847', startTime: Date.now() - 4 * 3600000,
 }
-
-export function getCamp() {
-  return load(KEYS.CAMP, DEMO_CAMP)
-}
+export function getCamp()   { return load(KEYS.CAMP, DEMO_CAMP) }
 export function saveCamp(c) { save(KEYS.CAMP, c) }
 
 // --- Devices ---
 const DEMO_DEVICES = [
-  { id: 'SWIFT-EYE-14', role: 'Tester',      tester: 'Ana Kalpokas',   status: 'online',  lastSeen: Date.now() - 12000,      clients: 8,  battery: 87 },
-  { id: 'KEEN-LENS-33',  role: 'Tester',      tester: 'James Tavita',   status: 'online',  lastSeen: Date.now() - 3000,       clients: 12, battery: 62 },
-  { id: 'BOLD-IRIS-71',  role: 'Supervisor',  tester: 'Dr. Sarah Lini', status: 'syncing', lastSeen: Date.now() - 45000,      clients: 0,  battery: 94 },
-  { id: 'CLEAR-BEAM-55', role: 'Tester',      tester: 'Mere Tuilagi',   status: 'offline', lastSeen: Date.now() - 8 * 60000,  clients: 5,  battery: 31 },
+  { id: 'SWIFT-EYE-14', role: 'Tester',     tester: 'Ana Kalpokas',   status: 'online',  lastSeen: Date.now() - 12000,     clients: 8,  battery: 87 },
+  { id: 'KEEN-LENS-33',  role: 'Tester',     tester: 'James Tavita',   status: 'online',  lastSeen: Date.now() - 3000,      clients: 12, battery: 62 },
+  { id: 'BOLD-IRIS-71',  role: 'Supervisor', tester: 'Dr. Sarah Lini', status: 'syncing', lastSeen: Date.now() - 45000,     clients: 0,  battery: 94 },
+  { id: 'CLEAR-BEAM-55', role: 'Tester',     tester: 'Mere Tuilagi',   status: 'offline', lastSeen: Date.now() - 8 * 60000, clients: 5,  battery: 31 },
 ]
-
-export function getDevices() {
-  const saved = load(KEYS.DEVICES)
-  if (saved && saved.length > 0) return saved
-  save(KEYS.DEVICES, DEMO_DEVICES)
-  return DEMO_DEVICES
-}
-
+export function getDevices()   { const s = load(KEYS.DEVICES); if (s?.length) return s; save(KEYS.DEVICES, DEMO_DEVICES); return DEMO_DEVICES }
 export function getThisDevice() {
   let d = load('hl_this_device')
-  if (!d) {
-    d = { id: 'SHARP-VIEW-29', role: 'Tester', battery: 78 }
-    save('hl_this_device', d)
-  }
+  if (!d) { d = { id: 'SHARP-VIEW-29', role: 'Tester', battery: 78 }; save('hl_this_device', d) }
   return d
 }
 
-// --- Demo clients ---
+// --- OOXii line → Snellen lookup ---
+export const OOXII_LINES = [
+  { line: 1,  snellen: '6/60'  }, { line: 2,  snellen: '6/48'  },
+  { line: 3,  snellen: '6/36'  }, { line: 4,  snellen: '6/30'  },
+  { line: 5,  snellen: '6/24'  }, { line: 6,  snellen: '6/18'  },
+  { line: 7,  snellen: '6/15'  }, { line: 8,  snellen: '6/12'  },
+  { line: 9,  snellen: '6/9'   }, { line: 10, snellen: '6/7.5' },
+  { line: 11, snellen: '6/6'   }, { line: 12, snellen: '6/5'   },
+  { line: 13, snellen: '6/4'   }, { line: 14, snellen: '6/3'   },
+]
+
+export function calcSnellen(lineNum, partialLetters) {
+  if (!lineNum) return '—'
+  const idx = OOXII_LINES.findIndex(l => l.line === parseInt(lineNum))
+  if (idx < 0) return '—'
+  if (!partialLetters || partialLetters === '0') return OOXII_LINES[idx].snellen
+  // Partial credit: show as e.g. 6/12 (partial)
+  const nextLine = OOXII_LINES[idx + 1]
+  return nextLine ? `${OOXII_LINES[idx].snellen}+${partialLetters}` : OOXII_LINES[idx].snellen
+}
+
+// --- Clients ---
 const now = Date.now()
 const DEMO_CLIENTS = [
-  {
-    id: '7243K', ageBand: '50-59', gender: 'F', location: 'Luganville', cataractHx: false,
-    status: 'dispensed', steps: ['distance','wheel','near','lens'], createdAt: now - 3600000, synced: true,
-    clinical: { distanceVA_R: '6/18', distanceVA_L: '6/12', wheelResult: 'Mild astigmatism OD', nearVA_R: 'N8', nearVA_L: 'N8',
-      dispensed: { sph_R: '-1.00', cyl_R: '-0.50', axis_R: '90', sph_L: '-0.75', cyl_L: '0.00', axis_L: '0', add: '+1.50', frame: 'F04-TRT' } }
+  { id: 'OX-7243', yearOfBirth: 1974, gender: 'F', location: 'Luganville', cataract: 'none',
+    status: 'dispensed', createdAt: now - 3600000, synced: true,
+    clinical: { distVA_R_line: '8', distVA_R_partial: '2', distVA_R: '6/12+2', distVA_L_line: '9', distVA_L_partial: '0', distVA_L: '6/9', ownGlasses: 'yes', distVA_both_line: '10', distVA_both: '6/7.5', nearVA_line: '8', nearVA: '6/12', readingGlasses: 'no', pd: '64', wheelR: { best: 'minus', lens: '-1.00', colour: 'same', readLine9: 'yes' } }
   },
-  {
-    id: '3381M', ageBand: '60-69', gender: 'M', location: 'Luganville', cataractHx: true,
-    status: 'in-progress', steps: ['distance','wheel'], createdAt: now - 900000, synced: false,
-    clinical: { distanceVA_R: '6/60', distanceVA_L: '6/36', wheelResult: 'Significant astigmatism OU' }
+  { id: 'OX-3381', yearOfBirth: 1963, gender: 'M', location: 'Luganville', cataract: 'both',
+    status: 'in-progress', createdAt: now - 900000, synced: false,
+    clinical: { distVA_R_line: '4', distVA_R_partial: '1', distVA_R: '6/30+1', distVA_L_line: '5', distVA_L_partial: '0', distVA_L: '6/24' }
   },
-  {
-    id: '5592A', ageBand: '40-49', gender: 'F', location: 'Luganville', cataractHx: false,
-    status: 'dispensed', steps: ['distance','wheel','near','lens'], createdAt: now - 7200000, synced: true,
-    clinical: { distanceVA_R: '6/6', distanceVA_L: '6/9', wheelResult: 'No significant astigmatism', nearVA_R: 'N6', nearVA_L: 'N6',
-      dispensed: { sph_R: '0.00', cyl_R: '0.00', axis_R: '0', sph_L: '+0.50', cyl_L: '0.00', axis_L: '0', add: '+1.00', frame: 'F02-BRN' } }
+  { id: 'OX-5592', yearOfBirth: 1982, gender: 'F', location: 'Luganville', cataract: 'none',
+    status: 'dispensed', createdAt: now - 7200000, synced: true,
+    clinical: { distVA_R_line: '11', distVA_R_partial: '0', distVA_R: '6/6', distVA_L_line: '10', distVA_L_partial: '2', distVA_L: '6/7.5+2' }
   },
-  {
-    id: '9914C', ageBand: '70+', gender: 'M', location: 'Big Bay', cataractHx: true,
-    status: 'waiting', steps: [], createdAt: now - 300000, synced: false, clinical: {}
+  { id: 'OX-9914', yearOfBirth: 1951, gender: 'M', location: 'Big Bay', cataract: 'right',
+    status: 'waiting', createdAt: now - 300000, synced: false, clinical: {}
   },
-  {
-    id: '1127R', ageBand: '30-39', gender: 'F', location: 'Luganville', cataractHx: false,
-    status: 'dispensed', steps: ['distance','wheel','near','lens'], createdAt: now - 5400000, synced: true,
-    clinical: { distanceVA_R: '6/9', distanceVA_L: '6/6', wheelResult: 'No significant astigmatism', nearVA_R: 'N5', nearVA_L: 'N5',
-      dispensed: { sph_R: '-0.50', cyl_R: '0.00', axis_R: '0', sph_L: '0.00', cyl_L: '0.00', axis_L: '0', add: '+0.75', frame: 'F01-BLK' } }
-  },
-  {
-    id: '8803F', ageBand: '50-59', gender: 'M', location: 'Luganville', cataractHx: false,
-    status: 'in-progress', steps: ['distance'], createdAt: now - 420000, synced: false,
-    clinical: { distanceVA_R: '6/24', distanceVA_L: '6/18' }
-  },
-  {
-    id: '4456P', ageBand: '40-49', gender: 'F', location: 'Norsup', cataractHx: false,
-    status: 'waiting', steps: [], createdAt: now - 120000, synced: false, clinical: {}
+  { id: 'OX-1127', yearOfBirth: 1989, gender: 'F', location: 'Luganville', cataract: 'none',
+    status: 'dispensed', createdAt: now - 5400000, synced: true,
+    clinical: { distVA_R_line: '10', distVA_R: '6/7.5', distVA_L_line: '11', distVA_L: '6/6' }
   },
 ]
 
-export function getClients() {
-  const saved = load(KEYS.CLIENTS)
-  if (saved && saved.length > 0) return saved
-  save(KEYS.CLIENTS, DEMO_CLIENTS)
-  return DEMO_CLIENTS
-}
-
+export function getClients()  { const s = load(KEYS.CLIENTS); if (s?.length) return s; save(KEYS.CLIENTS, DEMO_CLIENTS); return DEMO_CLIENTS }
 export function getClient(id) { return getClients().find(c => c.id === id) }
 
 export function saveClient(client) {
   const clients = getClients()
   const idx = clients.findIndex(c => c.id === client.id)
-  if (idx >= 0) clients[idx] = client
-  else clients.unshift(client)
+  if (idx >= 0) clients[idx] = client; else clients.unshift(client)
   save(KEYS.CLIENTS, clients)
   addToSyncQueue({ type: 'client', id: client.id })
 }
 
 export function createClient(data) {
-  const client = {
-    id: generateClientId(),
-    ageBand: data.ageBand || '',
-    gender: data.gender || '',
-    location: data.location || '',
-    cataractHx: data.cataractHx || false,
-    status: 'waiting',
-    steps: [],
-    createdAt: Date.now(),
-    synced: false,
-    clinical: {},
-  }
+  const id = 'OX-' + Math.floor(1000 + Math.random() * 9000)
+  const client = { id, ...data, status: 'in-progress', createdAt: Date.now(), synced: false, clinical: {} }
   saveClient(client)
   return client
 }
 
-// --- Sync queue ---
+// --- Sync ---
 export function addToSyncQueue(item) {
-  const q = load(KEYS.SYNC_QUEUE, [])
-  q.push({ ...item, queuedAt: Date.now() })
-  save(KEYS.SYNC_QUEUE, q)
+  const q = load(KEYS.SYNC_QUEUE, []); q.push({ ...item, queuedAt: Date.now() }); save(KEYS.SYNC_QUEUE, q)
 }
-export function getSyncQueue() { return load(KEYS.SYNC_QUEUE, []) }
+export function getSyncQueue()   { return load(KEYS.SYNC_QUEUE, []) }
 export function clearSyncQueue() { save(KEYS.SYNC_QUEUE, []) }
 
-// --- QR payload ---
-export function encodeQRPayload(data) {
-  return btoa(JSON.stringify(data)).replace(/=/g, '')
-}
-export function decodeQRPayload(str) {
-  try { return JSON.parse(atob(str + '==')) } catch { return null }
-}
+// --- QR ---
+export function encodeQRPayload(data)  { return btoa(JSON.stringify(data)).replace(/=/g, '') }
+export function decodeQRPayload(str)   { try { return JSON.parse(atob(str + '==')) } catch { return null } }
 export function buildSyncPayload(clients) {
-  const camp = getCamp()
-  const tester = getTester()
-  return {
-    v: 1, campId: camp.campId, tester: tester?.name, ts: Date.now(),
-    clients: clients.map(c => ({ id: c.id, status: c.status, steps: c.steps, clinical: c.clinical, updatedAt: c.createdAt })),
-  }
+  const camp = getCamp(); const tester = getTester()
+  return { v: 1, campId: camp.campId, tester: tester?.firstName, ts: Date.now(),
+    clients: clients.map(c => ({ id: c.id, status: c.status, clinical: c.clinical })) }
 }
+
+// --- Location data ---
+export const COUNTRIES = ['Australia','Vanuatu','Papua New Guinea','Solomon Islands','Fiji','Samoa','Tonga','New Zealand','Timor-Leste','Indonesia','Philippines']
+export const STATES = {
+  'Australia': ['New South Wales','Victoria','Queensland','Western Australia','South Australia','Tasmania','ACT','Northern Territory'],
+  'Vanuatu': ['Shefa','Sanma','Tafea','Malampa','Penama','Torba'],
+  'Papua New Guinea': ['National Capital District','Morobe','Eastern Highlands','Western Highlands','Central','Gulf','Milne Bay'],
+  'Solomon Islands': ['Guadalcanal','Malaita','Western','Central'],
+  'Fiji': ['Central','Western','Northern','Eastern'],
+  'Samoa': ['Apia Urban Area','Rest of Samoa'],
+  'Tonga': ["Tongatapu","Ha'apai","Vava'u"],
+  'New Zealand': ['Auckland','Wellington','Canterbury','Waikato','Bay of Plenty','Otago','Manawatu-Whanganui'],
+  'default': ['Region 1','Region 2','Region 3'],
+}
+export const CITIES = {
+  'New South Wales': ['Sydney','Newcastle','Wollongong','Canberra','Dubbo','Tamworth','Albury'],
+  'Victoria': ['Melbourne','Geelong','Ballarat','Bendigo'],
+  'Queensland': ['Brisbane','Gold Coast','Cairns','Townsville'],
+  'Sanma': ['Luganville','Big Bay','Norsup'],
+  'Shefa': ['Port Vila','Mele','Pango'],
+  'National Capital District': ['Port Moresby'],
+  'Guadalcanal': ['Honiara'],
+  'Central': ['Suva'],
+  'Tongatapu': ["Nuku'alofa"],
+  'Auckland': ['Auckland City','North Shore','Waitakere','Manukau'],
+  'default': ['City 1','City 2','City 3'],
+}
+export const HEALTH_ROLES = ['Optometrist','Ophthalmologist','Nurse','Community Health Worker','Tester','Volunteer','Other']
+export const EXPERIENCE_LEVELS = ['First time','Trained (1-5 sessions)','Experienced (6-20 sessions)','Expert (20+ sessions)']

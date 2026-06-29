@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { getTester, getCamp, getClients, logout } from '../store'
 import DashboardScreen from './DashboardScreen'
+import WelcomeScreen from './WelcomeScreen'
+import TestFlowScreen from './TestFlowScreen'
 import CampDevicesScreen from './CampDevicesScreen'
 import ClientsScreen from './ClientsScreen'
 import DispenserScreen from './DispenserScreen'
@@ -25,6 +27,8 @@ const INIT_NOTIFS = [
 
 export default function MainShell({ onLogout }) {
   const [tab, setTab]                   = useState('home')
+  const [showWelcome, setShowWelcome]     = useState(false)
+  const [showTestFlow, setShowTestFlow]   = useState(false)
   const [selectedClientId, setSelectedClientId] = useState(null)
   const [showProfile, setShowProfile]     = useState(false)
   const [showNotifs, setShowNotifs]       = useState(false)
@@ -37,7 +41,7 @@ export default function MainShell({ onLogout }) {
   const unread  = notifs.filter(n => !n.read).length
 
   function goDispense(id) { setSelectedClientId(id); setTab('dispenser') }
-  function goNewClient()  { setNewClientMode(true); setTab('clients') }
+  function goNewClient()  { setShowTestFlow(true) }
   function goClients()    { setNewClientMode(false); setTab('clients') }
   function goDevices()    { setTab('devices') }
   function markAllRead()  { setNotifs(n => n.map(x => ({ ...x, read: true }))) }
@@ -143,6 +147,11 @@ export default function MainShell({ onLogout }) {
       )}
       {showWifi && <ConnectivityPanel onClose={() => setShowWifi(false)} />}
       {showCampDetails && <CampDetailsPanel onClose={() => setShowCampDetails(false)} />}
+      {showTestFlow && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'linear-gradient(170deg,#1A0F3C 0%,#0D0820 100%)' }}>
+          <TestFlowScreen onDone={() => { setShowTestFlow(false); setTab('clients') }} onBack={() => setShowTestFlow(false)} />
+        </div>
+      )}
     </div>
   )
 }
